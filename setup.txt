@@ -1,0 +1,4 @@
+create Database fyyur
+createdb fyyur
+add user fyyur to database
+xxx

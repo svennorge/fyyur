@@ -5,6 +5,7 @@
 import json
 import dateutil.parser
 import babel
+from config import SQLALCHEMY_DATABASE_URI
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
@@ -21,7 +22,8 @@ moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
 
-# TODO: connect to a local postgresql database
+# DONE: connect to a local postgresql database
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 
 #----------------------------------------------------------------------------#
 # Models.
