@@ -6,7 +6,7 @@ import json
 import dateutil.parser
 import babel
 from config import SQLALCHEMY_DATABASE_URI
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
@@ -15,7 +15,6 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 from models import Artist, Venue, Shows
-# from models import Shows, Venue, Artist
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -86,6 +85,7 @@ def venues():
       "num_upcoming_shows": 0,
     }]
   }]
+  print(type(data))
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
