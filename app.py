@@ -269,6 +269,9 @@ def show_artist(artist_id):
   data['facebook_link'] = art.facebook_link
   data['seeking_venue'] = art.seeking_venue
   data['seeking_description'] = art.seeking_description
+
+
+  print(len(acts))
   # todo generate result for shows past and future
 
   return render_template('pages/show_artist.html', artist=data)
@@ -340,17 +343,17 @@ def create_artist_submission():
     # called upon submitting the new artist listing form
     newArtistData = Artist(
         name = request.form['name'],
-        genres = request.form['genres'],
+        genres = request.form.getlist('genres'),
         city = request.form['city'],
         state = request.form['state'],
         phone = request.form['phone'],
-        website = 'http://', # TODO
-        image_link = 'http://', #TODO
+        website = request.form['website'],
+        image_link = request.form['image_link'],
         facebook_link = request.form['facebook_link'],
         seeking_venue = False, #TODO
         seeking_description = 'seeking_description')
-
     try:
+        print(newArtistData.genres)
         db.session.add(newArtistData)
         db.session.commit()
         flash('Artist ' + request.form['name'] + ' was successfully listed!')
@@ -361,7 +364,8 @@ def create_artist_submission():
         db.session.close()
     # TODO: modify data to be the data object returned from db insertion
 
-    return render_template('pages/home.html')
+    #return render_template('pages/home.html')
+    return render_template('pages/artists.html')
 
 
 #  Shows
