@@ -48,6 +48,13 @@ def format_datetime(value, format='medium'):
 
 app.jinja_env.filters['datetime'] = format_datetime
 
+
+#------------------#
+# Helper
+#------------------#
+def currentDateTime():
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
 #----------------------------------------------------------------------------#
 # Controllers.
 #----------------------------------------------------------------------------#
@@ -85,7 +92,6 @@ def venues():
       "num_upcoming_shows": 0,
     }]
   }]
-  print(type(data))
   return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
@@ -200,19 +206,20 @@ def create_venue_submission():
   # TODO: insert form data as a new Venue record in the db, instead
   try:
     pass # todo insert data
+    newVenue = Venue(
+        name=request.form['']
+    )
+    db.session.add(newVenue)
     db.session.commit()
+    flash('Venue ' + request.form['name'] + ' was successfully listed!')
   except:
-    db.session.rollback
+    db.session.rollback()
+    #flash('An error occurred. Venue ' + data.name + ' could not be listed.')
   finally:
-    db.session.close
+    db.session.close()
 
   # TODO: modify data to be the data object returned from db insertion
 
-  # on successful db insert, flash success
-  flash('Venue ' + request.form['name'] + ' was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
   return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
@@ -228,11 +235,7 @@ def delete_venue(venue_id):
 #  ----------------------------------------------------------------
 @app.route('/artists')
 def artists():
-    data = []
-    artists = db.session.query(Artist.id, Artist.name).all()
-    for artistrecord in artists:
-        artistrecord = dict(zip(('id', 'name'), artistrecord))
-        data.append(artistrecord)
+    data = Artist.query.all()
     return render_template('pages/artists.html', artists=data)
 
 @app.route('/artists/search', methods=['POST'])
@@ -254,25 +257,8 @@ def search_artists():
 def show_artist(artist_id):
   # shows the venue page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
-  data = {}
-  art = db.session.query(Artist).filter_by(id=artist_id).first()
-  acts = db.session.query(Shows).filter_by(artist_id=artist_id).all()
-
-  data['id'] = art.id
-  data['name'] = art.name
-  data['city'] = art.city
-  data['state'] = art.state
-  data['phone'] = art.phone
-  data['genres'] = art.genres
-  data['website'] = art.website
-  data['image_link'] = art.image_link
-  data['facebook_link'] = art.facebook_link
-  data['seeking_venue'] = art.seeking_venue
-  data['seeking_description'] = art.seeking_description
-
-
-  print(len(acts))
-  # todo generate result for shows past and future
+  data = db.session.query(Artist).filter_by(id=artist_id).first()
+      # todo generate result for shows past and future
 
   return render_template('pages/show_artist.html', artist=data)
 
@@ -341,7 +327,16 @@ def create_artist_form():
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
     # called upon submitting the new artist listing form
+    seeking = request.form['seeking_venue']
+    if seeking == 'y':
+        seeking_venue = True
+    else:
+        seeking_venue = False
+    print(seeking)
+    print(seeking_venue)
+
     newArtistData = Artist(
+        seeking_venue=seeking_venue,
         name = request.form['name'],
         genres = request.form.getlist('genres'),
         city = request.form['city'],
@@ -350,10 +345,8 @@ def create_artist_submission():
         website = request.form['website'],
         image_link = request.form['image_link'],
         facebook_link = request.form['facebook_link'],
-        seeking_venue = False, #TODO
-        seeking_description = 'seeking_description')
+        seeking_description = request.form['seeking_description'])
     try:
-        print(newArtistData.genres)
         db.session.add(newArtistData)
         db.session.commit()
         flash('Artist ' + request.form['name'] + ' was successfully listed!')
@@ -363,6 +356,7 @@ def create_artist_submission():
     finally:
         db.session.close()
     # TODO: modify data to be the data object returned from db insertion
+    # TODO: Sven do not understand this
 
     #return render_template('pages/home.html')
     return render_template('pages/artists.html')

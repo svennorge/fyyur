@@ -47,8 +47,72 @@ class Artist(db.Model):
     seeking_description = db.Column(db.String(500))
     shows = db.relationship("Shows", backref='artist')
 
-    def __repr__(self):
-        return f'<Artist {self.id} {self.name}>'
+    #def __repr__(self):
+    #    return f'<Artist {self.id} {self.name}>'
+
+    def __init__(self, **args):
+        self.name = args.get('name')
+        self.city = args.get('city')
+        self.state = args.get('state')
+        self.phone = args.get('phone')
+        self.genres = args.get('genres')
+        self.website = args.get('website')
+        self.image_link = args.get('image_link')
+        self.facebook_link = args.get('facebook_link')
+        self.seeking_venue = args.get('seeking_venue')
+        self.seeking_description = args.get('seeking_description')
+
+    def insert(self):
+        error = 0
+        try:
+            db.session.add(self)
+            db.session.commit()
+            self.id
+        except:
+            db.session.rollback()
+            error = 1
+        finally:
+            db.session.close()
+        if error == 0:
+            return True
+        else:
+            return False
+
+    def update(self):
+        error = False
+        try:
+            pass
+        except:
+            pass
+            error = True
+        finally:
+            pass
+        if error:
+            return False
+        else:
+            return True
+
+
+    def delete(self):
+        error = False
+        try:
+            db.session.delete(self)
+            db.session.commit()
+        except:
+            db.session.rollback()
+            error = True
+        finally:
+            db.session.close()
+        if error:
+            return False
+        else:
+            return True
+
+
+    def artist_short(self):
+        return {'id':self.id, 'name':self.name,}
+
+
 
 
 class Shows(db.Model):
