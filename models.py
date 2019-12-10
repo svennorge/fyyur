@@ -27,8 +27,45 @@ class Venue(db.Model):
     seeking_description = db.Column(db.String(500))
     shows = db.relationship('Shows', backref='venue')
 
+    def __init__(self, **args):
+        self.id = args.get('id'),
+        self.name = args.get('name'),
+        self.city = args.get('city'),
+        self.state = args.get('state'),
+        self.address = args.get('adress'),
+        self.genres = args.get('genres'),
+        self.phone = args.get('phone'),
+        self.image_link = args.get('image_link'),
+        self.facebook_link = args.get('facebook_link'),
+        self.website = args.get('website'),
+        self.seeking_talent = args.get('seeking_talent'),
+        self.seeking_description = args.get('seeking_description')
+
     def __repr__(self):
         return f'<Venue {self.id} {self.name}>'
+
+    def insertVenue(self):
+        error = 0
+        try:
+            db.session.add(self)
+            db.session.commit()
+            self.id
+        except:
+            db.session.rollback()
+            error = 1
+        finally:
+            db.session.close()
+        if error == 0:
+            return True
+        else:
+            return False
+
+    def past_venue():
+        return db.session.query(Venue).count()
+
+
+    def upcomming_venue():
+        return db.session.query(Venue).count()
 
 
 class Artist(db.Model):
@@ -47,10 +84,8 @@ class Artist(db.Model):
     seeking_description = db.Column(db.String(500))
     shows = db.relationship("Shows", backref='artist')
 
-    #def __repr__(self):
-    #    return f'<Artist {self.id} {self.name}>'
-
     def __init__(self, **args):
+        self.id = args.get('id')
         self.name = args.get('name')
         self.city = args.get('city')
         self.state = args.get('state')
@@ -61,6 +96,9 @@ class Artist(db.Model):
         self.facebook_link = args.get('facebook_link')
         self.seeking_venue = args.get('seeking_venue')
         self.seeking_description = args.get('seeking_description')
+
+    def __repr__(self):
+        return f'<Artist {self.id} {self.name}>'
 
     def insert(self):
         error = 0
@@ -112,9 +150,6 @@ class Artist(db.Model):
     def artist_short(self):
         return {'id':self.id, 'name':self.name,}
 
-
-
-
 class Shows(db.Model):
     __tablename__ = 'shows'
 
@@ -123,5 +158,32 @@ class Shows(db.Model):
     artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
     show_date = db.Column(db.String(40))
 
-    def __repr__(self):
-        return f'<Show {self.id} {self.show_date}>'
+    def __init__(self, **args):
+        self.id = args.get('id'),
+        self.venue_id = args.get('venue_id'),
+        self.artist_id = args.get('artist_id'),
+        self.show_date = args.get('show_date')
+
+    #def __repr__(self):
+    #    return f'<Show {self.id} {self.show_date}>'
+
+    def insert(self):
+        error = False
+        try:
+            db.session.add(self)
+            db.session.commit()
+        except:
+            db.session. rollback()
+            error = True
+        finally:
+            db.session.close()
+        if error:
+            return False
+        else:
+            return True
+
+    def pastshows(self):
+        pass
+
+    def comingshows(self):
+        return {'artist_id': self.artist_id, 'venue_id': self.venue_id }
