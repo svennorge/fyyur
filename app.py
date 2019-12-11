@@ -69,9 +69,16 @@ def index():
 
 @app.route('/venues')
 def venues():
-  # TODO: replace with real venues data.
-  #       num_shows should be aggregated based on number of upcoming shows per venue.
-  data=[{
+    # TODO: replace with real venues data.
+    #       num_shows should be aggregated based on number of upcoming shows per venue.
+    venues = db.session.query(Venue.city, Venue.state).group_by(Venue.city, Venue.state)
+    data = []
+    for venue in venues:
+        z = dict(zip(('city', 'state'), venue))
+        data.append(z)
+    print(data)
+
+    datas=[{
     "city": "San Francisco",
     "state": "CA",
     "venues": [{
@@ -83,7 +90,7 @@ def venues():
       "name": "Park Square Live Music & Coffee",
       "num_upcoming_shows": 1,
     }]
-  }, {
+    }, {
     "city": "New York",
     "state": "NY",
     "venues": [{
@@ -91,8 +98,8 @@ def venues():
       "name": "The Dueling Pianos Bar",
       "num_upcoming_shows": 0,
     }]
-  }]
-  return render_template('pages/venues.html', areas=data);
+    }]
+    return render_template('pages/venues.html', areas=data);
 
 @app.route('/venues/search', methods=['POST'])
 def search_venues():
@@ -203,24 +210,32 @@ def create_venue_form():
 
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
-  # TODO: insert form data as a new Venue record in the db, instead
-  try:
-    pass # todo insert data
+    # seeking = request.form['seeking_venue']
+    # if seeking == 'y':
+    #     seeking_venue = True
+    # else:
+    #     seeking_venue = False
+    seeking = False
+
     newVenue = Venue(
-        name=request.form['']
+        name = request.form['name'],
+        city = request.form['city'],
+        address = request.form['address'],
+        state = request.form['state'],
+        genres = request.form['genres'],
+        facebook_link = request.form['facebook_link'],
+        phone = request.form['phone'],
+        seeking_talent = seeking
     )
-    db.session.add(newVenue)
-    db.session.commit()
-    flash('Venue ' + request.form['name'] + ' was successfully listed!')
-  except:
-    db.session.rollback()
-    #flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-  finally:
-    db.session.close()
+
+    if Venue.insert(newVenue):
+      flash('Venue ' + request.form['name'] + ' was successfully listed!')
+    else:
+      flash('An error occurred. Venue ' + request.form['name']+ ' could not be listed.')
 
   # TODO: modify data to be the data object returned from db insertion
 
-  return render_template('pages/home.html')
+    return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
@@ -346,20 +361,18 @@ def create_artist_submission():
         image_link = request.form['image_link'],
         facebook_link = request.form['facebook_link'],
         seeking_description = request.form['seeking_description'])
-    try:
-        db.session.add(newArtistData)
-        db.session.commit()
+
+    if Artist.insert(newArtistData):
         flash('Artist ' + request.form['name'] + ' was successfully listed!')
-    except:
-        db.session.rollback()
+    else:
         flash('An error occurred. Artist ' + request.form['name'] + ' could not be listed.')
-    finally:
-        db.session.close()
+
     # TODO: modify data to be the data object returned from db insertion
     # TODO: Sven do not understand this
 
-    #return render_template('pages/home.html')
-    return render_template('pages/artists.html')
+    return render_template('pages/home.html')
+    # TODO Added by Sven / rework required
+    #return render_template('pages/artists.html')
 
 
 #  Shows
@@ -372,48 +385,17 @@ def shows():
   #       num_shows should be aggregated based on number of upcoming shows per venue.
   data = []
   shows = Shows.query.all()
-  for showrecord in shows:
-    showrecord = dict(zip(('id', 'name'), showrecord))
-    data.append(showrecord)
+  for show in shows:
+       record = dict(zip(('venue_id',
+                          'venue_name',
+                          'artist_id',
+                          'artist_name',
+                          'artist_image_link',
+                          'start_time'),
+                         (show.venue_id, show.venue.name, show.artist_id, show.artist.name,show.artist.image_link,show.show_date)))
+       data.append(record)
 
-  data = [{
-    "venue_id": 1,
-    "venue_name": "The Musical Hop",
-    "artist_id": 4,
-    "artist_name": "Guns N Petals",
-    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "start_time": "2019-05-21T21:30:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 5,
-    "artist_name": "Matt Quevedo",
-    "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-    "start_time": "2019-06-15T23:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-01T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-08T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-15T20:00:00.000Z"
-  }]
-
-  return render_template('pages/shows.html', shows=getShows)
+  return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
 def create_shows():
@@ -429,15 +411,10 @@ def create_show_submission():
         venue_id = request.form['venue_id'],
         show_date = request.form['start_time']
         )
-    try:
-        db.session.add(newShow)
-        db.session.commit()
+    if Shows.insert(newShow):
         flash('Show was successfully listed!')
-    except:
-        db.session.rollback()
+    else:
         flash('An error occurred. Show could not be listed.')
-    finally:
-        db.session.close()
     return render_template('pages/home.html')
 
 @app.errorhandler(404)

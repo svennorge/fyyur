@@ -28,23 +28,22 @@ class Venue(db.Model):
     shows = db.relationship('Shows', backref='venue')
 
     def __init__(self, **args):
-        self.id = args.get('id'),
-        self.name = args.get('name'),
-        self.city = args.get('city'),
-        self.state = args.get('state'),
-        self.address = args.get('adress'),
-        self.genres = args.get('genres'),
-        self.phone = args.get('phone'),
-        self.image_link = args.get('image_link'),
-        self.facebook_link = args.get('facebook_link'),
-        self.website = args.get('website'),
-        self.seeking_talent = args.get('seeking_talent'),
+        self.name = args.get('name')
+        self.city = args.get('city')
+        self.state = args.get('state')
+        self.address = args.get('address')
+        self.genres = args.get('genres')
+        self.phone = args.get('phone')
+        self.image_link = args.get('image_link')
+        self.facebook_link = args.get('facebook_link')
+        self.website = args.get('website')
+        self.seeking_talent = args.get('seeking_talent')
         self.seeking_description = args.get('seeking_description')
 
     def __repr__(self):
         return f'<Venue {self.id} {self.name}>'
 
-    def insertVenue(self):
+    def insert(self):
         error = 0
         try:
             db.session.add(self)
@@ -60,11 +59,17 @@ class Venue(db.Model):
         else:
             return False
 
-    def past_venue():
+
+    def update(self):
+        pass
+
+    def delete(self):
+        pass
+
+    def past_venue(self):
         return db.session.query(Venue).count()
 
-
-    def upcomming_venue():
+    def upcomming_venue(self):
         return db.session.query(Venue).count()
 
 
@@ -85,7 +90,6 @@ class Artist(db.Model):
     shows = db.relationship("Shows", backref='artist')
 
     def __init__(self, **args):
-        self.id = args.get('id')
         self.name = args.get('name')
         self.city = args.get('city')
         self.state = args.get('state')
@@ -159,19 +163,19 @@ class Shows(db.Model):
     show_date = db.Column(db.String(40))
 
     def __init__(self, **args):
-        self.id = args.get('id'),
         self.venue_id = args.get('venue_id'),
         self.artist_id = args.get('artist_id'),
         self.show_date = args.get('show_date')
 
-    #def __repr__(self):
-    #    return f'<Show {self.id} {self.show_date}>'
+    def __repr__(self):
+        return f'<Show {self.id} {self.show_date}>'
 
     def insert(self):
         error = False
         try:
             db.session.add(self)
             db.session.commit()
+            self.id
         except:
             db.session. rollback()
             error = True
@@ -182,8 +186,30 @@ class Shows(db.Model):
         else:
             return True
 
-    def pastshows(self):
-        pass
+    def detail(self):
+        return {
+            'artist_id': self.artist_id,
+            'artist_name': self.artist.name,
+            'venue_id': self.venue_id,
+            'venue_name': self.Venue.name,
+            'start_time': self.show_date
+        }
 
     def comingshows(self):
         return {'artist_id': self.artist_id, 'venue_id': self.venue_id }
+
+
+def detail_venue(city, state):
+    '''
+    Returns all Venues at given location
+    :param city: as String
+    :param state: as String
+    :return:
+    '''
+    query_venue = db.session.query(Venue.id, Venue.name).filter_by(city=city, state=state).all()
+    data = []
+    for venue in query_venue:
+        z = zip(('id','name'),venue)
+        d = dict(z)
+        data.append(d)
+    return data
