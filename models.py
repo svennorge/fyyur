@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, jsonify, abort
-from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy import SQLAlchemy, inspect
 from flask_migrate import Migrate
 import sys
 
@@ -200,12 +200,6 @@ class Shows(db.Model):
 
 
 def detail_venue(city, state):
-    '''
-    Returns all Venues at given location
-    :param city: as String
-    :param state: as String
-    :return:
-    '''
     query_venue = db.session.query(Venue.id, Venue.name).filter_by(city=city, state=state).all()
     data = []
     for venue in query_venue:
@@ -213,3 +207,20 @@ def detail_venue(city, state):
         d = dict(z)
         data.append(d)
     return data
+
+def venue_shows(venue_id):
+    query_shows = db.session.query.filter_by(venue_id=venue_id).all()
+    data=[]
+    for show in query_shows:
+        data.append(dict(zip(('artist_id', 'artist_name', 'artist_image_link', 'start_time'),
+                             (show.id, show.artist.name, show.artist.image_link, show.show_date))))
+
+    return data
+
+
+# convesrion of ORM to DICT
+# sourced from
+# https://riptutorial.com/sqlalchemy/example/6614/converting-a-query-result-to-dict
+def object_as_dict(obj):
+    return {c.key: getattr(obj, c.key)
+            for c in inspect(obj).mapper.column_attrs}

@@ -14,7 +14,7 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
-from models import Artist, Venue, Shows
+from models import Artist, Venue, Shows, detail_venue, venue_shows
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -75,6 +75,7 @@ def venues():
     data = []
     for venue in venues:
         z = dict(zip(('city', 'state'), venue))
+        z['venues'] = detail_venue(venue.city, venue.state)
         data.append(z)
     print(data)
 
@@ -120,6 +121,11 @@ def search_venues():
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
+  data = []
+  venue = Venue.query.filter_by(id=venue_id).all()
+  print(len(venue))
+  venue[0].['venues'] = 'data'
+
   data1={
     "id": 1,
     "name": "The Musical Hop",
@@ -197,7 +203,7 @@ def show_venue(venue_id):
     "past_shows_count": 1,
     "upcoming_shows_count": 1,
   }
-  data = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
+  #datas = list(filter(lambda d: d['id'] == venue_id, [data1, data2, data3]))[0]
   return render_template('pages/show_venue.html', venue=data)
 
 #  Create Venue
