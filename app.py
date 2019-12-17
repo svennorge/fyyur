@@ -5,6 +5,7 @@
 import json
 import dateutil.parser
 import babel
+from datetime import datetime
 from config import SQLALCHEMY_DATABASE_URI
 from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify
 from flask_moment import Moment
@@ -15,6 +16,9 @@ from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
 from models import Artist, Venue, Shows, detail_venue, venue_shows
+from datetime import datetime
+
+
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -53,7 +57,15 @@ app.jinja_env.filters['datetime'] = format_datetime
 # Helper
 #------------------#
 def currentDateTime():
+    '''
+    :return:
+    '''
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+# gets the current timestamp
+# using lambda to get allways the current time
+
+getnow  = lambda : datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 #----------------------------------------------------------------------------#
 # Controllers.
@@ -75,7 +87,9 @@ def venues():
     data = []
     for venue in venues:
         z = dict(zip(('city', 'state'), venue))
-        z['venues'] = detail_venue(venue.city, venue.state)
+        z['venues'] = detail_venue(venue.city, venue.state, currentDateTime())
+        # TODO upcomming Shows
+        #len(db.session.query(Shows).filter_by(venue_id=venue.id).all())
         data.append(z)
     print(data)
 
@@ -122,9 +136,8 @@ def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
   data = []
-  venue = Venue.query.filter_by(id=venue_id).all()
-  print(len(venue))
-  venue[0].['venues'] = 'data'
+  venue = Venue.query.filter_by(id=venue_id).first()
+  data = venue
 
   data1={
     "id": 1,
@@ -223,15 +236,15 @@ def create_venue_submission():
     #     seeking_venue = False
     seeking = False
 
-    newVenue = Venue(
-        name = request.form['name'],
-        city = request.form['city'],
-        address = request.form['address'],
-        state = request.form['state'],
-        genres = request.form['genres'],
-        facebook_link = request.form['facebook_link'],
-        phone = request.form['phone'],
-        seeking_talent = seeking
+    newVenue=Venue(
+        name=request.form['name'],
+        city=request.form['city'],
+        address=request.form['address'],
+        state= request.form['state'],
+        genres=request.form['genres'],
+        facebook_link=request.form['facebook_link'],
+        phone=request.form['phone'],
+        seeking_talent=seeking
     )
 
     if Venue.insert(newVenue):
@@ -276,12 +289,10 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-  # shows the venue page with the given venue_id
-  # TODO: replace with real venue data from the venues table, using venue_id
-  data = db.session.query(Artist).filter_by(id=artist_id).first()
-      # todo generate result for shows past and future
+  artist_query = Artist.query.get(artist_id)
+  artist = Artist.detail(artist_query)
 
-  return render_template('pages/show_artist.html', artist=data)
+  return render_template('pages/show_artist.html', artist=artist)
 
 #  Update
 #  ----------------------------------------------------------------
