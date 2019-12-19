@@ -72,12 +72,42 @@ class Venue(db.Model):
     def delete(self):
         pass
 
-    def past_venue(self):
-        return db.session.query(Venue).count()
+    def past_shows(venue_id):
+        past = db.session.query(Shows).filter_by(venue_id=venue_id).filter(Shows.show_date < getnow()).all()
+        shows = []
+        for p in past:
+            # todo replace link and date p.venue.image_link, p.date_time
+            shows.append(dict(zip(('artist_id', 'artist_name', 'artist_image_link', 'start_time'),
+                                        (p.artist_id, p.artist.name, "http://www.google.de", p.show_date))))
+        return shows
 
-    def upcomming_venue(self):
-        return db.session.query(Venue).count()
-    def short(self):
+    def coming_shows(venue_id):
+        past = db.session.query(Shows).filter_by(venue_id=venue_id).filter(Shows.show_date > getnow()).all()
+        shows = []
+        for p in past:
+            # todo replace link and date p.venue.image_link, p.date_time
+            shows.append(dict(zip(('artist_id', 'artist_name', 'artist_image_link', 'start_time'),
+                                  (p.artist_id, p.artist.name, "http://www.google.de", p.show_date))))
+        return shows
+
+    def venue_detail(self):
+        venue = object_as_dict(self)
+        venue['upcoming_shows'] = Venue.coming_shows(self.id)
+        venue['past_shows'] = Venue.past_shows(self.id)
+        venue['past_shows_count'] = len(venue['past_shows'])
+        venue['upcoming_shows_count'] = len(venue['upcoming_shows'])
+        print(venue)
+        return venue
+
+    def venue_short(self):
+        data = []
+
+        # todo city state filter
+
+        # todo venue filter
+
+        # todo return result
+
         return data
 
 
@@ -160,12 +190,16 @@ class Artist(db.Model):
 
 
     def artist_short(self):
-        id = self.id()
-        return {'id': id,
-                'name': self.name,
-                }
+        artists = self
+        data = []
+        for artist in artists:
+            data.append(dict(zip(('id', 'name'), (artist.id, artist.name))))
+        return data
 
     def detail(self):
+        '''
+        Like this more than artist_detail
+        '''
         artist = object_as_dict(self)
         past = db.session.query(Shows).filter_by(artist_id=self.id).filter(Shows.show_date < getnow()).all()
         past_venues = []
@@ -184,40 +218,6 @@ class Artist(db.Model):
         artist["upcoming_shows"] = upp_venues
 
         return artist
-
-
-    def artist_detail(self):
-        past = db.session.query(Shows).filter_by(artist_id=self.id).filter(Shows.show_date > getnow()).all()
-        past_venues = []
-        for p in past:
-            past_venues.append(dict(zip(('venue_id', 'venue_name', 'venue_image_link', 'start_time'),
-                                        (p.venue_id, p.venue.name, "http://www.google.de", "2035-04-15T20:00:00.000Z"))))
-        upp = db.session.query(Shows).filter_by(artist_id=self.id).filter(Shows.show_date < getnow()).all()
-        upp_venues = []
-        for u in upp:
-            upp_venues.append(dict(zip(('venue_id', 'venue_name', 'venue_image_link', 'start_time'),
-                                        (u.venue_id, u.venue.name, "http://www.google.de", "2035-04-15T20:00:00.000Z"))))
-
-        artist = {
-            "id": self.id,
-            "name": self.name,
-            "city": self.city,
-            "state": self.state,
-            "phone": self.phone,
-            "genres": self.genres,
-            "website": self.website,
-            "image_link": self.image_link,
-            "facebook_link": self.facebook_link,
-            "seeking_venue": self.seeking_venue,
-            "seeking_description": self.seeking_description,
-            "past_shows_count": len(past_venues),
-            "upcoming_shows_count": len(upp_venues),
-            "past_shows": upp_venues,
-            "upcoming_shows": past_venues
-        }
-        print(artist)
-        return artist
-
 
 class Shows(db.Model):
     __tablename__ = 'shows'
@@ -270,23 +270,14 @@ def detail_venue(city, state, currentDateTime):
     query_venue = db.session.query(Venue.id, Venue.name).filter_by(city=city, state=state).all()
     data = []
     for venue in query_venue:
-        z = zip(('id','name'),venue)
-        d = dict(z)
-        d['upcomming_shows'] = len(db.session.query(Shows).filter_by(venue_id=venue.id).filter(Shows.show_date > currentDateTime).all())
+        d = dict(zip(('id','name'),venue))
+        # todo aggredation of uppcomming Shows
+        d['num_upcoming_shows'] = len(db.session.query(Shows).filter_by(venue_id=venue.id).filter(Shows.show_date > currentDateTime).all())
         data.append(d)
+    print(data)
     return data
 
-def venue_shows(venue_id):
-    query_shows = db.session.query.filter_by(venue_id=venue_id).all()
-    data=[]
-    for show in query_shows:
-        data.append(dict(zip(('artist_id', 'artist_name', 'artist_image_link', 'start_time'),
-                             (show.id, show.artist.name, show.artist.image_link, show.show_date))))
-
-    return data
-
-
-# convesrion of ORM to DICT
+# conversion of ORM to DICT
 # sourced from
 # https://riptutorial.com/sqlalchemy/example/6614/converting-a-query-result-to-dict
 def object_as_dict(obj):
