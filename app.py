@@ -15,7 +15,7 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
-from models import Artist, Venue, Shows, detail_venue
+from models import Artist, Venue, Shows#,detail_venue
 from datetime import datetime
 
 
@@ -56,11 +56,6 @@ app.jinja_env.filters['datetime'] = format_datetime
 #------------------#
 # Helper
 #------------------#
-def currentDateTime():
-    '''
-    :return:
-    '''
-    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 # gets the current timestamp
 # using lambda to get allways the current time
@@ -81,33 +76,20 @@ def index():
 
 @app.route('/venues')
 def venues():
-    # data = [{
-        #   "city": "San Francisco",
-        #   "state": "CA",
-        #   "venues": [{
-        #     "id": 1,
-        #     "name": "The Musical Hop",
-        #     "num_upcoming_shows": 0,
-        #   }, {
-        #     "id": 3,
-        #     "name": "Park Square Live Music & Coffee",
-        #     "num_upcoming_shows": 1,
-        #   }]
-    # new data start
-    #data = Venue.venue_short()
+
     data = []
     venues = Venue.query.with_entities(Venue.city, Venue.state).group_by(Venue.city, Venue.state)
     for venue in venues:
         detail = []
         info = dict(zip(('city', 'state'), venue))
-        info['venues'] = detail_venue(venue.city, venue.state, currentDateTime())
-        #todo Details
+        query_venue = db.session.query(Venue.id, Venue.name).filter_by(city=venue.city, state=venue.state).all()
+        for ven in query_venue:
+            det = dict(zip(('id', 'name'), ven))
+            up_shows = db.session.query(Shows).filter_by(venue_id=ven.id).filter(Shows.show_date > getnow()).all()
+            det['num_upcoming_shows'] = len(up_shows)
+            detail.append(det)
+        info['venues'] = detail
         data.append(info)
-
-    # new data end
-
-    # TODO: replace with real venues data.
-    #       num_shows should be aggregated based on number of upcoming shows per venue.
 
     return render_template('pages/venues.html', areas=data);
 
@@ -190,14 +172,23 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  response={
-    "count": 1,
-    "data": [{
-      "id": 4,
-      "name": "Guns N Petals",
-      "num_upcoming_shows": 0,
-    }]
-  }
+  artist_query = Artist.query.filter(Artist.name.ilike('%' + request.form['search_term'] + '%'))
+  #artist_list = list(map(Artist.short, artist_query))
+  #response = {
+  #    "count": len(artist_list),
+  #    "data": artist_list
+  #}
+  print(artist_query)
+
+  # response={
+  #   "count": 1,
+  #   "data": [{
+  #     "id": 4,
+  #     "name": "Guns N Petals",
+  #     "num_upcoming_shows": 0,
+  #   }]
+  # }
+  response  = []
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/artists/<int:artist_id>')
@@ -275,8 +266,6 @@ def create_artist_submission():
         seeking_venue = True
     else:
         seeking_venue = False
-    print(seeking)
-    print(seeking_venue)
 
     newArtistData = Artist(
         seeking_venue=seeking_venue,

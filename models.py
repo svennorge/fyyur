@@ -266,17 +266,6 @@ class Shows(db.Model):
         return {'artist_id': self.artist_id, 'venue_id': self.venue_id }
 
 
-def detail_venue(city, state, currentDateTime):
-    query_venue = db.session.query(Venue.id, Venue.name).filter_by(city=city, state=state).all()
-    data = []
-    for venue in query_venue:
-        d = dict(zip(('id','name'),venue))
-        # todo aggredation of uppcomming Shows
-        d['num_upcoming_shows'] = len(db.session.query(Shows).filter_by(venue_id=venue.id).filter(Shows.show_date > currentDateTime).all())
-        data.append(d)
-    print(data)
-    return data
-
 # conversion of ORM to DICT
 # sourced from
 # https://riptutorial.com/sqlalchemy/example/6614/converting-a-query-result-to-dict
