@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://sven@localhost:5432/fyyur'
 # link app to database
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
+# migrate = Migrate(app, db)
 
 getnow  = lambda : datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -47,9 +47,17 @@ class Venue(db.Model):
         self.seeking_description = args.get('seeking_description')
 
     def __repr__(self):
+        '''
+        Returns a understandable object of the venue
+        :return:
+        '''
         return f'<Venue {self.id} {self.name}>'
 
     def insert(self):
+        '''
+        Insert class function incl. Error Handling
+        :return: Status of operation True if sussessful and False if any error happens
+        '''
         error = 0
         try:
             db.session.add(self)
@@ -67,27 +75,39 @@ class Venue(db.Model):
 
 
     def update(self):
+        '''
+        Future use
+        :return: Nothing
+        '''
         pass
 
     def delete(self):
+        '''
+        Future use
+        :return: Nothing
+        '''
         pass
 
     def past_shows(venue_id):
-        past = db.session.query(Shows).filter_by(venue_id=venue_id).filter(Shows.show_date < getnow()).all()
+        '''
+        @:param
+        :return: list of Shows for given Venue
+        '''
+        past = db.session.query(Shows).filter_by(venue_id=venue_id).filter(Shows.start_time < getnow()).all()
         shows = []
         for p in past:
             # todo replace link and date p.venue.image_link, p.date_time
             shows.append(dict(zip(('artist_id', 'artist_name', 'artist_image_link', 'start_time'),
-                                        (p.artist_id, p.artist.name, "http://www.google.de", p.show_date))))
+                                        (p.artist_id, p.artist.name, "http://www.google.de", p.start_time))))
         return shows
 
     def coming_shows(venue_id):
-        past = db.session.query(Shows).filter_by(venue_id=venue_id).filter(Shows.show_date > getnow()).all()
+        past = db.session.query(Shows).filter_by(venue_id=venue_id).filter(Shows.start_time > getnow()).all()
         shows = []
         for p in past:
             # todo replace link and date p.venue.image_link, p.date_time
             shows.append(dict(zip(('artist_id', 'artist_name', 'artist_image_link', 'start_time'),
-                                  (p.artist_id, p.artist.name, "http://www.google.de", p.show_date))))
+                                  (p.artist_id, p.artist.name, "http://www.google.de", p.start_time))))
         return shows
 
     def venue_detail(self):
@@ -201,17 +221,17 @@ class Artist(db.Model):
         Like this more than artist_detail
         '''
         artist = object_as_dict(self)
-        past = db.session.query(Shows).filter_by(artist_id=self.id).filter(Shows.show_date < getnow()).all()
+        past = db.session.query(Shows).filter_by(artist_id=self.id).filter(Shows.start_time < getnow()).all()
         past_venues = []
         for p in past:
             # todo replace link and date p.venue.image_link, p.date_time
             past_venues.append(dict(zip(('venue_id', 'venue_name', 'venue_image_link', 'start_time'),
-                                        (p.venue_id, p.venue.name, "http://www.google.de", p.show_date))))
-        upp = db.session.query(Shows).filter_by(artist_id=self.id).filter(Shows.show_date > getnow()).all()
+                                        (p.venue_id, p.venue.name, "http://www.google.de", p.start_time))))
+        upp = db.session.query(Shows).filter_by(artist_id=self.id).filter(Shows.start_time > getnow()).all()
         upp_venues = []
         for u in upp:
             upp_venues.append(dict(zip(('venue_id', 'venue_name', 'venue_image_link', 'start_time'),
-                                       (u.venue_id, u.venue.name, "http://www.google.de", u.show_date))))
+                                       (u.venue_id, u.venue.name, "http://www.google.de", u.start_time))))
         artist["past_shows_count"] = len(past_venues)
         artist["upcoming_shows_count"] = len(upp_venues)
         artist["past_shows"] = past_venues
@@ -225,14 +245,13 @@ class Shows(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     venue_id = db.Column(db.Integer, db.ForeignKey('venue.id'), nullable=False )
     artist_id = db.Column(db.Integer, db.ForeignKey('artist.id'), nullable=False)
-    show_date = db.Column(db.String(40))
     start_time = db.Column(db.String(40))
 
 
     def __init__(self, **args):
         self.venue_id = args.get('venue_id'),
         self.artist_id = args.get('artist_id'),
-        self.show_date = args.get('show_date')
+        self.start_time = args.get('show_date')
 
     def __repr__(self):
         return f'<Show {self.id} {self.show_date}>'

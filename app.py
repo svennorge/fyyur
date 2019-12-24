@@ -11,11 +11,12 @@ from flask import Flask, render_template, request, Response, flash, redirect, ur
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
+import models
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
-from models import Artist, Venue, Shows#,detail_venue
+from models import Artist, Venue, Shows, object_as_dict
 from datetime import datetime
 
 
@@ -36,8 +37,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 # Models.
 #----------------------------------------------------------------------------#
 
-# see models.py
-
+migrate = Migrate(app, db)
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -85,7 +85,7 @@ def venues():
         query_venue = db.session.query(Venue.id, Venue.name).filter_by(city=venue.city, state=venue.state).all()
         for ven in query_venue:
             det = dict(zip(('id', 'name'), ven))
-            up_shows = db.session.query(Shows).filter_by(venue_id=ven.id).filter(Shows.show_date > getnow()).all()
+            up_shows = db.session.query(Shows).filter_by(venue_id=ven.id).filter(Shows.start_time > getnow()).all()
             det['num_upcoming_shows'] = len(up_shows)
             detail.append(det)
         info['venues'] = detail
@@ -172,8 +172,9 @@ def search_artists():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
   # search for "band" should return "The Wild Sax Band".
-  artist_query = Artist.query.filter(Artist.name.ilike('%' + request.form['search_term'] + '%'))
-  #artist_list = list(map(Artist.short, artist_query))
+  artist_query = Artist.query.filter(Artist.name.ilike('%' + request.form['search_term'] + '%')).all()
+  # to do for loop
+  #artist_list = list(map(('id', 'name', 'num_upcoming_shows' ), (artist_query)))
   #response = {
   #    "count": len(artist_list),
   #    "data": artist_list
@@ -188,7 +189,9 @@ def search_artists():
   #     "num_upcoming_shows": 0,
   #   }]
   # }
+
   response  = []
+  response.append(len(artist_query))
   return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
 @app.route('/artists/<int:artist_id>')
@@ -227,6 +230,9 @@ def edit_artist_submission(artist_id):
 @app.route('/venues/<int:venue_id>/edit', methods=['GET'])
 def edit_venue(venue_id):
   form = VenueForm()
+
+  venue = Venue.query.get(venue_id)
+  print(object_as_dict(venue))
   venue={
     "id": 1,
     "name": "The Musical Hop",
@@ -309,7 +315,7 @@ def shows():
                           'artist_name',
                           'artist_image_link',
                           'start_time'),
-                         (show.venue_id, show.venue.name, show.artist_id, show.artist.name,show.artist.image_link,show.show_date)))
+                         (show.venue_id, show.venue.name, show.artist_id, show.artist.name,show.artist.image_link,show.start_time)))
        data.append(record)
 
   return render_template('pages/shows.html', shows=data)
