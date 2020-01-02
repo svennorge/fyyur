@@ -8,7 +8,7 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://sven@localhost:5432/fyyur'
 # link app to database
 db = SQLAlchemy(app)
-# migrate = Migrate(app, db)
+migrate = Migrate(app, db)
 
 getnow  = lambda : datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
