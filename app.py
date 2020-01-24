@@ -254,7 +254,6 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
-    # called upon submitting the new artist listing form
     seeking = request.form['seeking_venue']
     if seeking == 'y':
         seeking_venue = True
@@ -279,7 +278,6 @@ def create_artist_submission():
         flash('An error occurred. Artist ' + request.form['name'] + ' could not be listed.')
 
     # TODO: modify data to be the data object returned from db insertion
-    # TODO: Sven do not understand this
 
     return render_template('pages/home.html')
     # TODO Added by Sven / rework required
@@ -292,6 +290,7 @@ def create_artist_submission():
 @app.route('/shows')
 def shows():
   # displays list of shows at /shows
+  # needs to use join like   show_query = Show.query.options(db.joinedload(Show.Venue), db.joinedload(Show.Artist)).all()
   # TODO: replace with real venues data.
   #       num_shows should be aggregated based on number of upcoming shows per venue.
   data = []
@@ -322,6 +321,7 @@ def create_show_submission():
         venue_id = request.form['venue_id'],
         show_date = request.form['start_time']
         )
+    # todo: fetch newly created artist detail page
     if Shows.insert(newShow):
         flash('Show was successfully listed!')
     else:

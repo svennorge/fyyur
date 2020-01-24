@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="TerminalProjectOptionsProvider">
+    <envs>
+      <env key="FLASK_APP" value="app.py" />
+      <env key="FLASK_DEBUG" value="True" />
+      <env key="export FLASK_ENV" value="development" />
+    </envs>
+  </component>
+</project>
