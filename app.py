@@ -7,16 +7,15 @@ import dateutil.parser
 import babel
 from datetime import datetime
 from config import SQLALCHEMY_DATABASE_URI
-from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, jsonify, abort
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 import logging
-import models
 from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 from flask_migrate import Migrate
-from models import Artist, Venue, Shows, object_as_dict
+from models import Artist, Venue, Shows, object_as_dict, app, db
 from datetime import datetime
 
 
@@ -25,10 +24,9 @@ from datetime import datetime
 # App Config.
 #----------------------------------------------------------------------------#
 
-app = Flask(__name__)
+# app and db is imported from models
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
 
 # DONE: connect to a local postgresql database
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
@@ -37,7 +35,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 # Models.
 #----------------------------------------------------------------------------#
 
-# migrate = Migrate(app, db)
+migrate = Migrate(app, db)
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -58,7 +56,7 @@ app.jinja_env.filters['datetime'] = format_datetime
 #------------------#
 
 # gets the current timestamp
-# using lambda to get allways the current time
+# using a lambda function to get always the current time
 
 getnow  = lambda : datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -69,7 +67,6 @@ getnow  = lambda : datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 @app.route('/')
 def index():
   return render_template('pages/home.html')
-
 
 #  Venues
 #  ----------------------------------------------------------------
@@ -111,9 +108,14 @@ def search_venues():
 @app.route('/venues/<int:venue_id>')
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
-  data = Venue.venue_detail(Venue.query.get(venue_id))
+  detail = Venue.query.get(venue_id)
+  if detail is None:
+      abort(404)
+  else:
+      data = Venue.venue_detail(detail)
+  
   return render_template('pages/show_venue.html', venue=data)
-
+  
 #  Create Venue
 #  ----------------------------------------------------------------
 
@@ -143,22 +145,36 @@ def create_venue_submission():
     )
 
     if Venue.insert(newVenue):
-      flash('Venue ' + request.form['name'] + ' was successfully listed!')
+        flash('Venue ' + request.form['name'] + ' was successfully listed!')
     else:
-      flash('An error occurred. Venue ' + request.form['name']+ ' could not be listed.')
+        abort(404)
+        flash('An error occurred. Venue '+request.form['name']+' could not be listed.')
 
-  # TODO: modify data to be the data object returned from db insertion
-
-    return render_template('pages/home.html')
+    return redirect(url_for('show_venue', venue_id=newVenue.id))
+    # return render_template('pages/home.html')
 
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
-  # TODO: Complete this endpoint for taking a venue_id, and using
-  # SQLAlchemy ORM to delete a record. Handle cases where the session commit could fail.
-
-  # BONUS CHALLENGE: Implement a button to delete a Venue on a Venue Page, have it so that
-  # clicking that button delete it from the db then redirect the user to the homepage
-  return None
+    '''
+    Delete of Venues not assisiated to a show. Venues with assosiated show(s) can not be deleted
+    :param venue_id:
+    :return:
+    '''
+    error = 0
+    if Venue.query.get(venue_id) is None:
+        return jsonify({'Status': 'Not Found', 'Operation': 'DELETE'})
+    try:
+        Venue.query.filter_by(id=venue_id).delete()
+        db.session.commit()
+    except:
+        db.session.rollback()
+        error = 1
+    finally:
+        db.session.close()
+    if error == 0:
+        return jsonify({'Status': 'Success', 'Operation': 'DELETE'})
+    else:
+        return jsonify({'Status': 'Error Delete', 'Operation': 'DELETE', 'detail': 'Venues related to Shows could not be deleted'})
 
 #  Artists
 #  ----------------------------------------------------------------
@@ -184,8 +200,12 @@ def search_artists():
 
 @app.route('/artists/<int:artist_id>')
 def show_artist(artist_id):
-  artist = Artist.detail(Artist.query.get(artist_id))
-  return render_template('pages/show_artist.html', artist=artist)
+    detail = Artist.query.get(artist_id)
+    if detail is None:
+        abort(404)
+    else:
+        artist = Artist.detail(detail)
+    return render_template('pages/show_artist.html', artist=artist)
 
 #  Update
 #  ----------------------------------------------------------------
@@ -219,8 +239,7 @@ def edit_artist_submission(artist_id):
 def edit_venue(venue_id):
   form = VenueForm()
 
-  venue = Venue.query.get(venue_id)
-  print(object_as_dict(venue))
+  venues = Venue.query.get(venue_id)
   venue={
     "id": 1,
     "name": "The Musical Hop",
@@ -235,6 +254,14 @@ def edit_venue(venue_id):
     "seeking_description": "We are on the lookout for a local artist to play every two weeks. Please call us.",
     "image_link": "https://images.unsplash.com/photo-1543900694-133f37abaaa5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=400&q=60"
   }
+  venue = object_as_dict(venues)
+  form.name.data = venue['name']
+  form.genres.data = venue['genres']
+  form.address.data = venue['address']
+  form.city.data = venue['city']
+  form.state.data = venue['state']
+  form.phone.data = venue['phone']
+  
   # TODO: populate form with values from venue with ID <venue_id>
   return render_template('forms/edit_venue.html', form=form, venue=venue)
 
@@ -277,18 +304,16 @@ def create_artist_submission():
     else:
         flash('An error occurred. Artist ' + request.form['name'] + ' could not be listed.')
 
-    # TODO: modify data to be the data object returned from db insertion
+    return redirect(url_for('show_artist', artist_id=newArtistData.id))
 
-    return render_template('pages/home.html')
-    # TODO Added by Sven / rework required
-    #return render_template('pages/artists.html')
-
+    # return render_template('pages/home.html')
 
 #  Shows
 #  ----------------------------------------------------------------
 
 @app.route('/shows')
 def shows():
+    # todo use join to capture data
   # displays list of shows at /shows
   # needs to use join like   show_query = Show.query.options(db.joinedload(Show.Venue), db.joinedload(Show.Artist)).all()
   # TODO: replace with real venues data.
@@ -321,12 +346,14 @@ def create_show_submission():
         venue_id = request.form['venue_id'],
         show_date = request.form['start_time']
         )
-    # todo: fetch newly created artist detail page
     if Shows.insert(newShow):
         flash('Show was successfully listed!')
+        return redirect(url_for('shows'))
     else:
         flash('An error occurred. Show could not be listed.')
-    return render_template('pages/home.html')
+        abort(404)
+        return render_template('pages/home.html')
+
 
 @app.errorhandler(404)
 def not_found_error(error):

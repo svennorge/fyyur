@@ -8,7 +8,6 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgres://sven@localhost:5432/fyyur'
 # link app to database
 db = SQLAlchemy(app)
-migrate = Migrate(app, db)
 
 getnow  = lambda : datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -62,7 +61,6 @@ class Venue(db.Model):
         try:
             db.session.add(self)
             db.session.commit()
-            self.id
         except:
             db.session.rollback()
             error = 1
@@ -84,10 +82,11 @@ class Venue(db.Model):
     def delete(self):
         '''
         Future use
-        :return: Nothing
+        :return:
         '''
         pass
-
+    
+    
     def past_shows(venue_id):
         '''
         @:param
@@ -119,15 +118,21 @@ class Venue(db.Model):
         print(venue)
         return venue
 
-    def venue_short(self):
+    def format_short(self):
+        '''
+        To be used later
+        :return: data
+        '''
         data = []
+        return data
 
-        # todo city state filter
 
-        # todo venue filter
-
-        # todo return result
-
+    def format_long(self):
+        '''
+        to be used later
+        :return: data
+        '''
+        data = []
         return data
 
 
